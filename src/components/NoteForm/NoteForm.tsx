@@ -1,13 +1,12 @@
 import { Formik, Form, Field, ErrorMessage, type FormikHelpers } from "formik";
 import * as Yup from "yup";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { NoteTag } from "../../types/note";
-import type { CreateNotePayload } from "../../services/noteService";
+import { createNote, type CreateNotePayload } from "../../services/noteService";
 import css from "./NoteForm.module.css";
 
 interface NoteFormProps {
-  onSubmit: (values: CreateNotePayload) => void;
-  onCancel: () => void;
-  isSubmitting: boolean;
+  onClose: () => void;
 }
 
 const tagOptions: NoteTag[] = [
@@ -35,17 +34,26 @@ const validationSchema = Yup.object({
     .required("Tag is required"),
 });
 
-export default function NoteForm({
-  onSubmit,
-  onCancel,
-  isSubmitting,
-}: NoteFormProps) {
+export default function NoteForm({ onClose }: NoteFormProps) {
+  const queryClient = useQueryClient();
+
+  const createMutation = useMutation({
+    mutationFn: (payload: CreateNotePayload) => createNote(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      onClose();
+    },
+  });
+
   const handleSubmit = (
     values: CreateNotePayload,
     helpers: FormikHelpers<CreateNotePayload>,
   ): void => {
-    onSubmit(values);
-    helpers.setSubmitting(false);
+    createMutation.mutate(values, {
+      onSettled: () => {
+        helpers.setSubmitting(false);
+      },
+    });
   };
 
   return (
@@ -90,17 +98,13 @@ export default function NoteForm({
         </div>
 
         <div className={css.actions}>
-          <button
-            type="button"
-            className={css.cancelButton}
-            onClick={onCancel}
-          >
+          <button type="button" className={css.cancelButton} onClick={onClose}>
             Cancel
           </button>
           <button
             type="submit"
             className={css.submitButton}
-            disabled={isSubmitting}
+            disabled={createMutation.isPending}
           >
             Create note
           </button>

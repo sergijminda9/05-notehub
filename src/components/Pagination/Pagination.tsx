@@ -1,13 +1,15 @@
-import ReactPaginateImport from 'react-paginate';
-import css from './Pagination.module.css';
+import type { ComponentType } from "react";
+import ReactPaginateModule from "react-paginate";
+import type { ReactPaginateProps } from "react-paginate";
+import css from "./Pagination.module.css";
 
-// react-paginate's UMD build confuses Vite's dependency pre-bundler
-// (esbuild doesn't detect its nested __esModule flag), so the default
-// import sometimes resolves to the whole module object instead of the
-// component itself. This line safely unwraps it either way.
-const ReactPaginate =
-  (ReactPaginateImport as unknown as { default?: typeof ReactPaginateImport })
-    .default ?? ReactPaginateImport;
+type ModuleWithDefault<T> = { default: T };
+
+const ReactPaginate = (
+  ReactPaginateModule as unknown as ModuleWithDefault<
+    ComponentType<ReactPaginateProps>
+  >
+).default;
 
 interface PaginationProps {
   pageCount: number;
